@@ -59,7 +59,7 @@ function App() {
       setWarnings(data.warnings || []);
       setSettings(prev => ({
         ...prev,
-        promotions: data.promotions?.length ? data.promotions : DEFAULT_SETTINGS.promotions
+        promotions: data.promotions || []
       }));
     } catch (error) {
       setLoadError(error instanceof Error ? error.message : 'Không thể tải dữ liệu từ Google Sheet.');

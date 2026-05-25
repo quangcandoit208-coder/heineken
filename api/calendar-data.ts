@@ -4,8 +4,8 @@ import { mapActivationEvents, mapTotalCampaigns } from './_mappers.js';
 
 export default async function handler(_req: any, res: any) {
   try {
-    const totalCampaignsRange = process.env.GOOGLE_TOTAL_CAMPAIGNS_RANGE || "'Total Campaigns'!A:L";
-    const activationRange = process.env.GOOGLE_ACTIVATION_RANGE || "'Activation Template'!B:U";
+    const totalCampaignsRange = process.env.GOOGLE_TOTAL_CAMPAIGNS_RANGE || "'Total Campaigns'!A3:L";
+    const activationRange = process.env.GOOGLE_ACTIVATION_RANGE || "'Activation Template'!B6:U";
     const warnings: DataWarning[] = [];
 
     const [campaignRows, activationRows] = await Promise.all([

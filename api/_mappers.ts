@@ -14,16 +14,32 @@ type RowObject = {
   get: (...aliases: string[]) => string;
 };
 
-const toRows = (values: string[][]): RowObject[] => {
-  const headers = values[0] || [];
+type ToRowsOptions = {
+  headerRowIndex?: number;
+  headerRowCount?: number;
+};
+
+const toRows = (values: string[][], options: ToRowsOptions = {}): RowObject[] => {
+  const headerRowIndex = options.headerRowIndex || 0;
+  const headerRowCount = options.headerRowCount || 1;
+  const headerRows = values.slice(headerRowIndex, headerRowIndex + headerRowCount);
+  const columnCount = Math.max(0, ...headerRows.map(row => row.length));
+  const headers = Array.from({ length: columnCount }, (_, columnIndex) => {
+    for (let rowIndex = headerRows.length - 1; rowIndex >= 0; rowIndex -= 1) {
+      const header = cleanText(headerRows[rowIndex]?.[columnIndex]);
+      if (header) return header;
+    }
+    return '';
+  });
   const headerMap = new Map<string, number>();
 
   headers.forEach((header, index) => {
-    headerMap.set(normalizeHeader(header), index);
+    const normalized = normalizeHeader(header);
+    if (normalized) headerMap.set(normalized, index);
   });
 
-  return values.slice(1).map((row, rowIndex) => ({
-    rowNumber: rowIndex + 2,
+  return values.slice(headerRowIndex + headerRowCount).map((row, rowIndex) => ({
+    rowNumber: headerRowIndex + headerRowCount + rowIndex + 1,
     get: (...aliases: string[]) => {
       for (const alias of aliases) {
         const index = headerMap.get(normalizeHeader(alias));
@@ -34,6 +50,23 @@ const toRows = (values: string[][]): RowObject[] => {
   }));
 };
 
+const findHeaderRowIndex = (values: string[][], aliases: string[], minimumMatches: number) => {
+  let bestIndex = 0;
+  let bestScore = 0;
+  const normalizedAliases = aliases.map(normalizeHeader);
+
+  values.forEach((row, rowIndex) => {
+    const normalizedCells = new Set(row.map(cell => normalizeHeader(cell)));
+    const score = normalizedAliases.filter(alias => normalizedCells.has(alias)).length;
+    if (score > bestScore) {
+      bestScore = score;
+      bestIndex = rowIndex;
+    }
+  });
+
+  return bestScore >= minimumMatches ? bestIndex : 0;
+};
+
 const toProgramType = (value: string): ProgramType | null => {
   const normalized = cleanText(value).toLowerCase();
   if (normalized === 'activation') return 'Activation';
@@ -42,12 +75,13 @@ const toProgramType = (value: string): ProgramType | null => {
 };
 
 export const mapTotalCampaigns = (values: string[][], warnings: DataWarning[]): Promotion[] => {
-  const rows = toRows(values);
+  const headerRowIndex = findHeaderRowIndex(values, ['Brand', 'Title', 'Type'], 2);
+  const rows = toRows(values, { headerRowIndex });
 
   return rows.flatMap(row => {
-    const title = row.get('Title');
-    const brand = row.get('Brand');
-    const typeValue = row.get('Type (Activation/AWO)', 'Type');
+    const title = row.get('Title', 'Campaign Title', 'Program Title', 'Tên chương trình', 'Ten chuong trinh');
+    const brand = row.get('Brand', 'Nhãn hàng', 'Nhan hang');
+    const typeValue = row.get('Type (Activation/AWO)', 'Type', 'Program Type', 'Loại chương trình', 'Loai chuong trinh');
     const type = toProgramType(typeValue);
 
     if (!title && !brand && !typeValue) return [];
@@ -60,9 +94,9 @@ export const mapTotalCampaigns = (values: string[][], warnings: DataWarning[]): 
       return [];
     }
 
-    const bu = row.get('BU (VD: GHCM,NO,CE,MKD)', 'BU');
-    const startDate = normalizeDate(row.get('Start Date'));
-    const endDate = normalizeDate(row.get('End Date'));
+    const bu = row.get('BU (VD: GHCM,NO,CE,MKD)', 'BU', 'Region (Dữ liệu: GHCM, NO, CE, MKD)', 'Region', 'Regions');
+    const startDate = normalizeDate(row.get('Start Date', 'Start', 'Ngày bắt đầu', 'Ngay bat dau'));
+    const endDate = normalizeDate(row.get('End Date', 'End', 'Ngày kết thúc', 'Ngay ket thuc'));
 
     if (!startDate) {
       addWarning(warnings, 'TotalCampaigns', row.rowNumber, 'Start Date', 'Missing or invalid start date');
@@ -75,22 +109,23 @@ export const mapTotalCampaigns = (values: string[][], warnings: DataWarning[]): 
       id: slugify(`${brand}-${type}-${title}-${startDate || row.rowNumber}`),
       title,
       brand,
-      content: row.get('Content'),
-      image: normalizeLink(row.get('PC Image Link')),
-      mobileImage: normalizeLink(row.get('Mobile Image Link')),
+      content: row.get('Content', 'Description', 'Mô tả', 'Mo ta'),
+      image: normalizeLink(row.get('PC Image Link', 'Desktop Image Link', 'Image', 'Image Link')),
+      mobileImage: normalizeLink(row.get('Mobile Image Link', 'Mobile Image', 'Mobile Link')),
       type,
       startDate,
       endDate,
       regions: splitList(bu) as Region[],
       cities: [],
       bu,
-      venueListLink: normalizeLink(row.get('Venue List Link (AWO only) - Dán link không rút gọn', 'Venue List Link')),
+      venueListLink: normalizeLink(row.get('Venue List Link (AWO only) - Dán link không rút gọn', 'Venue List Link', 'Venue List', 'Maps Link')),
     }];
   });
 };
 
 export const mapActivationEvents = (values: string[][], warnings: DataWarning[]): ProgramEvent[] => {
-  const rows = toRows(values);
+  const headerRowIndex = findHeaderRowIndex(values, ['Brand', 'Outlet ID', 'Outlet Name', 'Date', 'Province'], 3);
+  const rows = toRows(values, { headerRowIndex, headerRowCount: 3 });
 
   return rows.flatMap(row => {
     const brand = row.get('Brand');
