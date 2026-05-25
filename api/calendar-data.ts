@@ -20,7 +20,7 @@ export default async function handler(_req: any, res: any) {
       updatedAt: new Date().toISOString(),
     };
 
-    res.setHeader('Cache-Control', 's-maxage=300, stale-while-revalidate=3600');
+    res.setHeader('Cache-Control', 'no-store');
     res.status(200).json(response);
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown API error';
