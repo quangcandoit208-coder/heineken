@@ -7,7 +7,7 @@ import {
   normalizeLink,
   slugify,
   splitList,
-} from './_validators';
+} from './_validators.js';
 
 type RowObject = {
   rowNumber: number;

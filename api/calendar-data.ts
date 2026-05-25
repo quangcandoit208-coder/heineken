@@ -1,6 +1,6 @@
 import type { CalendarDataResponse, DataWarning } from '../types';
-import { readSheetRange } from './_googleSheets';
-import { mapActivationEvents, mapTotalCampaigns } from './_mappers';
+import { readSheetRange } from './_googleSheets.js';
+import { mapActivationEvents, mapTotalCampaigns } from './_mappers.js';
 
 export default async function handler(_req: any, res: any) {
   try {
