@@ -21,6 +21,10 @@ const getEnv = (name: string): string => {
   return value;
 };
 
+const normalizeRange = (value: string) => {
+  return value.trim().replace(/^"(.*)"$/, '$1');
+};
+
 const normalizePrivateKey = (value: string) => {
   return value
     .trim()
@@ -89,7 +93,8 @@ const getAccessToken = async () => {
 export const readSheetRange = async (range: string): Promise<string[][]> => {
   const sheetId = getEnv('GOOGLE_SHEET_ID');
   const token = await getAccessToken();
-  const url = new URL(`https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${encodeURIComponent(range)}`);
+  const normalizedRange = normalizeRange(range);
+  const url = new URL(`https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${encodeURIComponent(normalizedRange)}`);
   url.searchParams.set('majorDimension', 'ROWS');
   url.searchParams.set('valueRenderOption', 'FORMATTED_VALUE');
 

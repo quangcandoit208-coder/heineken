@@ -21,7 +21,7 @@ Tai lieu nay tong hop yeu cau tu `yeu_cau.md`, source code hien tai, va cac quye
 - Service account secret luu trong Vercel Environment Variables, khong nam trong frontend bundle.
 - Agency chi nhap lieu tren Google Sheet.
 - Khong thiet ke bat ky flow nhap/sua/xoa data nao tu frontend.
-- Sheet campaign chinh ten la `Total Campaings`.
+- Sheet campaign chinh ten la `Total Campaigns`.
 - Khong yeu cau cot `Code`; neu can ID thi backend tu tao.
 - Cot `Code` hien tai xem la cot loi/khong dung.
 - Tam thoi chua thiet ke join campaign voi venue.
@@ -45,7 +45,7 @@ Tai lieu nay tong hop yeu cau tu `yeu_cau.md`, source code hien tai, va cac quye
 
 Website noi bo gom 3 chuc nang chinh:
 
-1. Hien thi cac chuong trinh hien co tu sheet `Total Campaings`.
+1. Hien thi cac chuong trinh hien co tu sheet `Total Campaigns`.
    - Click vao card/list item de xem detail.
    - Layout detail giu gan nhu frontend hien tai.
 
@@ -56,7 +56,7 @@ Website noi bo gom 3 chuc nang chinh:
    - Tam thoi chua link ten event sang detail.
 
 3. Hien thi cac chuong trinh/quyen loi AWO.
-   - Data chinh lay tu `Total Campaings` voi `Type = AWO`.
+   - Data chinh lay tu `Total Campaigns` voi `Type = AWO`.
    - Giu cach filter/sort cua `AWOSchedulePage.tsx`.
    - `Venue List Link` mo link maps tren browser.
    - Co phan trang 20 dong/trang.
@@ -121,8 +121,8 @@ De xuat dung cac bien:
 GOOGLE_SHEET_ID
 GOOGLE_CLIENT_EMAIL
 GOOGLE_PRIVATE_KEY
-GOOGLE_TOTAL_CAMPAIGNS_RANGE='Total Campaings'!A:L
-GOOGLE_ACTIVATION_RANGE='Activation Template'!A:U
+GOOGLE_TOTAL_CAMPAIGNS_RANGE='Total Campaigns'!A:L
+GOOGLE_ACTIVATION_RANGE='Activation Template'!B:U
 ```
 
 Ghi chu:
@@ -132,7 +132,7 @@ Ghi chu:
 
 ## 4. Mapping Google Sheet sang model hien tai
 
-### 4.1 Sheet Total Campaings
+### 4.1 Sheet Total Campaigns
 
 Input columns tu yeu cau:
 
@@ -152,7 +152,7 @@ Code
 ```
 
 Quyet dinh:
-- Dung ten sheet `Total Campaings`.
+- Dung ten sheet `Total Campaigns`.
 - Khong dung `Code`.
 - Backend tu tao `id`.
 - BU khong thay Region, nhung frontend hien co can `regions`, nen backend co the map tam:
@@ -253,7 +253,7 @@ Backend can lam sach data truoc khi tra frontend:
 - Trim tat ca text fields.
 - Date ve `YYYY-MM-DD`.
 - Bo qua row khong co date hop le trong Activation.
-- Bo qua row khong co `Title` trong Total Campaings.
+- Bo qua row khong co `Title` trong Total Campaigns.
 - Normalize type chi nhan `Activation` hoac `AWO`.
 - Map link Google Maps:
   - Neu link khong co `https://`, them `https://` khi co the.
@@ -336,7 +336,7 @@ Files tao moi:
 
 Chi tiet:
 - Doc Google Sheet bang service account.
-- Map `Total Campaings` sang `Promotion[]`.
+- Map `Total Campaigns` sang `Promotion[]`.
 - Map `Activation` sang `ProgramEvent[]`.
 - Cache response bang header:
 

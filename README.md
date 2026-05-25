@@ -10,7 +10,7 @@ Internal calendar website for HVN TONT programs. Data is loaded from a private G
 
 Create a private Google Sheet with these tabs:
 
-- `Total Campaings`
+- `Total Campaigns`
 - `Activation Template`
 
 Share the sheet as `Viewer` with the Google Cloud service account email.
@@ -23,8 +23,8 @@ Set these in Vercel Project Settings. For local API testing, place them in `.env
 GOOGLE_SHEET_ID=your_google_sheet_id
 GOOGLE_CLIENT_EMAIL=service-account@project.iam.gserviceaccount.com
 GOOGLE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n"
-GOOGLE_TOTAL_CAMPAIGNS_RANGE='Total Campaings'!A:L
-GOOGLE_ACTIVATION_RANGE='Activation Template'!A:U
+GOOGLE_TOTAL_CAMPAIGNS_RANGE='Total Campaigns'!A:L
+GOOGLE_ACTIVATION_RANGE='Activation Template'!B:U
 ```
 
 Do not prefix these variables with `VITE_`; they must stay server-side only.
