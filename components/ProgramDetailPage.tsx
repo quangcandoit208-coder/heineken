@@ -25,7 +25,7 @@ const ProgramDetailPage: React.FC<ProgramDetailPageProps> = ({ program, onBack, 
 
   const handleCta = () => {
       if (program.type === 'Activation') {
-          onViewScheduleWithBrand ? onViewScheduleWithBrand(program.brand) : setCurrentView('schedule');
+          onViewScheduleWithBrand ? onViewScheduleWithBrand(program.brand) : setCurrentView('activation');
       } else if (program.venueListLink) {
           window.open(program.venueListLink, '_blank');
       }

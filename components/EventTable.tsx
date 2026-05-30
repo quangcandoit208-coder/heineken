@@ -1,6 +1,7 @@
 
 import React, { useMemo } from 'react';
-import { ArrowUpDown, ArrowUp, ArrowDown, MapPin, Clock, Home, Info, Tag } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { ArrowUpDown, ArrowUp, ArrowDown, MapPin, Clock, Home, Info, Tag, CalendarDays } from 'lucide-react';
 import { ProgramEvent, SortConfig, SortField } from '../types';
 
 interface EventTableProps {
@@ -49,17 +50,19 @@ const EventTable: React.FC<EventTableProps> = ({ events, sortConfig, onSort, lan
   }, []);
 
   const getDayName = (dateString: string) => {
+    if (!dateString) return '-';
     const date = new Date(dateString);
     const daysVi = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
     const daysEn = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
     return language === 'vi' ? daysVi[date.getDay()] : daysEn[date.getDay()];
   };
 
-  const isToday = (dateString: string) => dateString === dateBoundaries.today;
-  const isTomorrow = (dateString: string) => dateString === dateBoundaries.tomorrow;
-  const isPast = (dateString: string) => dateString < dateBoundaries.today;
+  const isToday = (dateString: string) => Boolean(dateString) && dateString === dateBoundaries.today;
+  const isTomorrow = (dateString: string) => Boolean(dateString) && dateString === dateBoundaries.tomorrow;
+  const isPast = (dateString: string) => Boolean(dateString) && dateString < dateBoundaries.today;
   
   const isThisWeek = (dateString: string) => {
+    if (!dateString) return false;
     return dateString >= dateBoundaries.thisWeekStart && 
            dateString <= dateBoundaries.thisWeekEnd && 
            !isToday(dateString) && 
@@ -67,12 +70,13 @@ const EventTable: React.FC<EventTableProps> = ({ events, sortConfig, onSort, lan
   };
 
   const isNextWeek = (dateString: string) => {
+    if (!dateString) return false;
     return dateString >= dateBoundaries.nextWeekStart && 
            dateString <= dateBoundaries.nextWeekEnd;
   };
 
   const formatShortDate = (dateString: string) => {
-    if (!dateString) return '';
+    if (!dateString) return '-';
     const parts = dateString.split('-');
     if (parts.length === 3) {
       return `${parts[2]}-${parts[1]}`;
@@ -95,9 +99,20 @@ const EventTable: React.FC<EventTableProps> = ({ events, sortConfig, onSort, lan
     return 'bg-blue-50 text-blue-500 border-blue-100';
   };
 
+  const getScaleTagClasses = (scale: string) => {
+    const normalized = scale.trim().toLowerCase();
+    if (normalized === 'full') return 'bg-purple-50 text-purple-600 border-purple-100';
+    if (normalized === 'basic') return 'bg-teal-50 text-teal-600 border-teal-100';
+    if (normalized === 'tạ hiện' || normalized === 'ta hien') return 'bg-amber-50 text-amber-600 border-amber-100';
+    if (normalized === 'roving') return 'bg-sky-50 text-sky-600 border-sky-100';
+    if (normalized === 'fix activation') return 'bg-rose-50 text-rose-600 border-rose-100';
+    return 'bg-gray-50 text-gray-500 border-gray-100';
+  };
+
   const t = {
-    city: language === 'vi' ? 'TP' : 'City',
+    province: language === 'vi' ? 'Tỉnh/TP' : 'Province',
     time: language === 'vi' ? 'Thời gian' : 'Time',
+    eventName: language === 'vi' ? 'Tên event' : 'Event',
     brand: 'Brand',
     venue: language === 'vi' ? 'Tên quán' : 'Venue',
     address: language === 'vi' ? 'Địa chỉ' : 'Address',
@@ -128,7 +143,8 @@ const EventTable: React.FC<EventTableProps> = ({ events, sortConfig, onSort, lan
             <thead className="bg-gray-50">
               <tr>
                 <HeaderCell field="date" label={t.time} icon={Clock} className="w-24 sm:w-auto" />
-                <HeaderCell field="city" label={t.city} icon={MapPin} className="w-20 sm:w-auto" />
+                <HeaderCell field="eventName" label={t.eventName} icon={CalendarDays} className="w-32 sm:w-auto" />
+                <HeaderCell field="province" label={t.province} icon={MapPin} className="w-24 sm:w-auto" />
                 <HeaderCell field="brand" label={t.brand} icon={Tag} className="w-20 sm:w-auto" />
                 <HeaderCell field="venue" label={t.venue} icon={Home} className="w-32 sm:w-auto" />
                 <HeaderCell field="address" label={t.address} className="w-40 sm:w-auto" />
@@ -143,6 +159,7 @@ const EventTable: React.FC<EventTableProps> = ({ events, sortConfig, onSort, lan
                 const past = isPast(event.date);
                 const dayName = getDayName(event.date);
                 const shortDate = formatShortDate(event.date);
+                const dateLabel = event.date ? `${dayName}, ${shortDate}` : '-';
                 
                 return (
                   <tr key={event.id} className={`transition-colors ${past ? 'bg-gray-50 opacity-60 grayscale-[60%]' : 'hover:bg-green-50'}`}>
@@ -155,14 +172,25 @@ const EventTable: React.FC<EventTableProps> = ({ events, sortConfig, onSort, lan
                           {nextWeek && <span className="px-1.5 py-0.5 rounded-full text-[8px] font-medium bg-purple-50 text-purple-500 border border-purple-100 capitalize leading-none">{t.nextWeek}</span>}
                         </div>
                         <span className={`text-[11px] md:text-base font-bold ${past ? 'text-gray-400 line-through' : 'text-gray-900'}`}>
-                          {dayName}, {shortDate}
+                          {dateLabel}
                         </span>
                         <span className="text-[10px] text-gray-400">{event.time}</span>
                       </div>
                     </td>
                     <td className="px-2 py-2 sm:px-6 sm:py-4 whitespace-nowrap">
                       <span className={`text-[11px] md:text-base font-medium truncate block max-w-[80px] sm:max-w-none ${past ? 'text-gray-400' : 'text-gray-900'}`}>
-                        {event.city}
+                        {event.eventName && event.programId ? (
+                          <Link to={`/programs/${encodeURIComponent(event.programId)}`} className={past ? 'text-gray-400' : 'text-green-700 hover:underline'}>
+                            {event.eventName}
+                          </Link>
+                        ) : (
+                          <span className="text-gray-300">-</span>
+                        )}
+                      </span>
+                    </td>
+                    <td className="px-2 py-2 sm:px-6 sm:py-4 whitespace-nowrap">
+                      <span className={`text-[11px] md:text-base font-medium truncate block max-w-[90px] sm:max-w-none ${past ? 'text-gray-400' : 'text-gray-900'}`}>
+                        {event.province || event.city || '-'}
                       </span>
                     </td>
                     <td className="px-2 py-2 sm:px-6 sm:py-4 whitespace-nowrap">
@@ -173,12 +201,12 @@ const EventTable: React.FC<EventTableProps> = ({ events, sortConfig, onSort, lan
                     <td className="px-2 py-2 sm:px-6 sm:py-4 whitespace-nowrap">
                       <div className="flex flex-col gap-1">
                         {event.scale && (
-                          <span className={`w-fit px-1 py-0.5 rounded text-[8px] font-medium border ${event.scale.toLowerCase() === 'full' ? 'bg-purple-50 text-purple-400 border-purple-100' : 'bg-teal-50 text-teal-400 border-teal-100'} capitalize`}>
+                          <span className={`w-fit px-1 py-0.5 rounded text-[8px] font-medium border ${getScaleTagClasses(event.scale)} capitalize`}>
                             {event.scale}
                           </span>
                         )}
                         <div className="flex items-center gap-1">
-                          <span className={`text-[11px] md:text-base font-bold truncate max-w-[100px] sm:max-w-none ${past ? 'text-gray-400' : 'text-gray-900'}`}>{event.venue}</span>
+                          <span className={`text-[11px] md:text-base font-bold truncate max-w-[100px] sm:max-w-none ${past ? 'text-gray-400' : 'text-gray-900'}`}>{event.venue || '-'}</span>
                           <div className="relative group/info">
                             <Info className="w-3 h-3 text-gray-500 hover:text-green-700 cursor-help" />
                             <div className="absolute left-0 bottom-full mb-2 w-48 p-2 bg-gray-900 text-white rounded shadow-xl opacity-0 invisible group-hover/info:opacity-100 group-hover/info:visible transition-all z-20 text-[10px] pointer-events-none whitespace-normal">

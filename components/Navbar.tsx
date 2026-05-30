@@ -18,9 +18,8 @@ const Navbar: React.FC<NavbarProps> = ({ currentView, setCurrentView, settings, 
   
   const handleProgramClick = (id: string) => {
     if (onSelectProgram) {
-        onSelectProgram(id);
-        setCurrentView('program-detail');
-        setIsMobileMenuOpen(false);
+      onSelectProgram(id);
+      setIsMobileMenuOpen(false);
     }
   };
 
@@ -121,8 +120,8 @@ const Navbar: React.FC<NavbarProps> = ({ currentView, setCurrentView, settings, 
             </div>
 
             <button 
-              onClick={() => navigateTo('schedule')}
-              className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${currentView === 'schedule' ? 'text-green-700' : 'text-gray-500 hover:text-green-700'}`}
+              onClick={() => navigateTo('activation')}
+              className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${currentView === 'activation' ? 'text-green-700' : 'text-gray-500 hover:text-green-700'}`}
             >
               {t.schedule}
             </button>
@@ -227,8 +226,8 @@ const Navbar: React.FC<NavbarProps> = ({ currentView, setCurrentView, settings, 
             </div>
 
             <button 
-                onClick={() => navigateTo('schedule')}
-                className={`flex items-center gap-3 p-4 rounded-xl text-left font-bold ${currentView === 'schedule' ? 'bg-green-50 text-green-700' : 'text-gray-700 hover:bg-gray-50'}`}
+                onClick={() => navigateTo('activation')}
+                className={`flex items-center gap-3 p-4 rounded-xl text-left font-bold ${currentView === 'activation' ? 'bg-green-50 text-green-700' : 'text-gray-700 hover:bg-gray-50'}`}
             >
                 <Calendar className="w-5 h-5" /> {t.schedule}
             </button>

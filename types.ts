@@ -12,6 +12,13 @@ export interface ProgramEvent {
   mapLink?: string; // Optional custom link
   brand: string;
   description?: string;
+  eventCode?: string;
+  eventName?: string;
+  programId?: string;
+  checkInTime?: string;
+  checkOutTime?: string;
+  sourceSheet?: string;
+  sourceRow?: number;
   
   // New fields for extended information
   scale?: string;    // Full/Basic
@@ -92,7 +99,7 @@ export interface FilterState {
 }
 
 export interface DataWarning {
-  sheet: 'TotalCampaigns' | 'Activation';
+  sheet: string;
   row: number;
   field: string;
   message: string;
@@ -105,4 +112,4 @@ export interface CalendarDataResponse {
   updatedAt: string;
 }
 
-export type View = 'home' | 'schedule' | 'awo-schedule' | 'program-detail' | 'program-list';
+export type View = 'home' | 'activation' | 'awo-schedule' | 'program-detail' | 'program-list';

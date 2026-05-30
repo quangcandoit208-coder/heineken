@@ -32,16 +32,17 @@ const HomePage: React.FC<HomePageProps> = ({ setCurrentView, settings, onSelectP
 
   const handlePromoClick = (id: string) => {
     if (onSelectProgram) {
-        onSelectProgram(id);
-        setCurrentView('program-detail');
+      onSelectProgram(id);
+      return;
     }
+    setCurrentView('program-list');
   };
 
   const handleScheduleClick = (brand: string) => {
       if (onViewScheduleWithBrand) {
           onViewScheduleWithBrand(brand);
       } else {
-          setCurrentView('schedule');
+          setCurrentView('activation');
       }
   };
 
@@ -127,7 +128,7 @@ const HomePage: React.FC<HomePageProps> = ({ setCurrentView, settings, onSelectP
               {t.summary}
             </button>
             <button 
-              onClick={() => setCurrentView('schedule')}
+              onClick={() => setCurrentView('activation')}
               className="w-full sm:w-auto px-8 py-4 bg-green-700 text-white font-bold rounded-full hover:bg-green-800 transition-all shadow-xl transform hover:-translate-y-1 flex items-center justify-center gap-2"
             >
               {t.viewNow}

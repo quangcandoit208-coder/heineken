@@ -4,17 +4,16 @@ import FilterBar from './FilterBar';
 import EventTable from './EventTable';
 import PaginationControls from './PaginationControls';
 import { FilterState, ProgramEvent, SortConfig, SortField, AppSettings } from '../types';
-import { CalendarRange } from 'lucide-react';
 import { usePagination } from '../hooks/usePagination';
 
-interface SchedulePageProps {
+interface ActivationSchedulePageProps {
   events: ProgramEvent[];
   settings?: AppSettings;
   initialBrandFilter?: string | null;
   language: 'vi' | 'en';
 }
 
-const SchedulePage: React.FC<SchedulePageProps> = ({ events, settings, initialBrandFilter, language }) => {
+const ActivationSchedulePage: React.FC<ActivationSchedulePageProps> = ({ events, settings, initialBrandFilter, language }) => {
   const [filters, setFilters] = useState<FilterState>({
     search: '',
     city: '',
@@ -27,9 +26,7 @@ const SchedulePage: React.FC<SchedulePageProps> = ({ events, settings, initialBr
   const [showPastEvents, setShowPastEvents] = useState(false);
 
   useEffect(() => {
-    if (initialBrandFilter) {
-      setFilters(prev => ({ ...prev, brand: initialBrandFilter }));
-    }
+    setFilters(prev => ({ ...prev, brand: initialBrandFilter || '' }));
   }, [initialBrandFilter]);
 
   const [sortConfig, setSortConfig] = useState<SortConfig>({
@@ -49,64 +46,32 @@ const SchedulePage: React.FC<SchedulePageProps> = ({ events, settings, initialBr
       search: '',
       city: '',
       brand: '',
-      bu: '', // Reset bu filter
+      bu: '',
       dateFrom: '',
       dateTo: ''
     });
     setShowPastEvents(false);
   };
 
-  const dateWindow = useMemo(() => {
-    const today = new Date();
-    const dayOfWeek = today.getDay();
-    const diffToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
-    const currentMonday = new Date(today);
-    currentMonday.setDate(today.getDate() - diffToMonday);
-
-    const startDate = new Date(currentMonday);
-    startDate.setDate(currentMonday.getDate() - 7);
-
-    const endDate = new Date(currentMonday);
-    endDate.setDate(currentMonday.getDate() + 13);
-
-    const toISODate = (d: Date) => {
-        const year = d.getFullYear();
-        const month = String(d.getMonth() + 1).padStart(2, '0');
-        const day = String(d.getDate()).padStart(2, '0');
-        return `${year}-${month}-${day}`;
-    };
-
-    const toVNString = (d: Date) => {
-        return `${d.getDate()}/${d.getMonth() + 1}`;
-    };
-
-    const prefix = language === 'vi' ? 'Từ' : 'From';
-    const middle = language === 'vi' ? 'đến' : 'to';
-    const suffix = language === 'vi' ? '(3 tuần)' : '(3 weeks)';
-
-    return {
-        start: toISODate(startDate),
-        end: toISODate(endDate),
-        label: `${prefix} ${toVNString(startDate)} ${middle} ${toVNString(endDate)} ${suffix}`
-    };
-  }, [language]);
+  const provinceOptions = useMemo(() => {
+    return Array.from(new Set(events.map(event => event.province || event.city).filter(Boolean))).sort();
+  }, [events]);
 
   const processedEvents = useMemo(() => {
     let result = [...events];
     const now = new Date();
     const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 
-    result = result.filter(e => e.date >= dateWindow.start && e.date <= dateWindow.end);
-
     if (filters.search) {
       const searchLower = filters.search.toLowerCase();
       result = result.filter(e => 
         e.venue.toLowerCase().includes(searchLower) || 
-        e.address.toLowerCase().includes(searchLower)
+        e.address.toLowerCase().includes(searchLower) ||
+        (e.eventName || '').toLowerCase().includes(searchLower)
       );
     }
     if (filters.city) {
-      result = result.filter(e => e.city === filters.city);
+      result = result.filter(e => (e.province || e.city) === filters.city);
     }
     if (filters.bu) {
       result = result.filter(e => e.bu === filters.bu);
@@ -123,33 +88,48 @@ const SchedulePage: React.FC<SchedulePageProps> = ({ events, settings, initialBr
     }
 
     if (!showPastEvents) {
-        result = result.filter(e => e.date >= today);
+        result = result.filter(e => !e.date || e.date >= today);
     }
 
+    const getDateTimeKey = (event: ProgramEvent) => {
+      if (!event.date) return null;
+      return `${event.date} ${event.checkInTime || '99:99'}`;
+    };
+
+    const compareNullable = (aValue: string | null | undefined, bValue: string | null | undefined) => {
+      const aMissing = !aValue;
+      const bMissing = !bValue;
+      if (aMissing && bMissing) return 0;
+      if (aMissing) return 1;
+      if (bMissing) return -1;
+      if (aValue < bValue) return sortConfig.order === 'asc' ? -1 : 1;
+      if (aValue > bValue) return sortConfig.order === 'asc' ? 1 : -1;
+      return 0;
+    };
+
     result.sort((a, b) => {
-      const isPastA = a.date < today;
-      const isPastB = b.date < today;
+      const isPastA = a.date ? a.date < today : false;
+      const isPastB = b.date ? b.date < today : false;
 
       if (isPastA !== isPastB) {
           return isPastA ? 1 : -1;
       }
 
+      if (sortConfig.field === 'date') {
+        return compareNullable(getDateTimeKey(a), getDateTimeKey(b));
+      }
+
       const aValue = a[sortConfig.field];
       const bValue = b[sortConfig.field];
 
-      if (aValue === undefined || bValue === undefined) return 0;
-
-      if (aValue < bValue) {
-        return sortConfig.order === 'asc' ? -1 : 1;
-      }
-      if (aValue > bValue) {
-        return sortConfig.order === 'asc' ? 1 : -1;
-      }
-      return 0;
+      return compareNullable(
+        typeof aValue === 'string' ? aValue : aValue?.toString(),
+        typeof bValue === 'string' ? bValue : bValue?.toString(),
+      );
     });
 
     return result;
-  }, [events, filters, sortConfig, showPastEvents, dateWindow]);
+  }, [events, filters, sortConfig, showPastEvents]);
 
   const {
     currentPage,
@@ -165,7 +145,6 @@ const SchedulePage: React.FC<SchedulePageProps> = ({ events, settings, initialBr
   }, [filters, sortConfig, showPastEvents, setCurrentPage]);
 
   const t = {
-    range: language === 'vi' ? 'Phạm vi:' : 'Range:',
     title: language === 'vi' ? 'Lịch trình Activation' : 'Activation Schedule',
     subtitle: language === 'vi' ? settings?.scheduleSubtitle || 'Tìm kiếm và theo dõi các hoạt động mới nhất.' : 'Search and track the latest activities.'
   };
@@ -189,10 +168,6 @@ const SchedulePage: React.FC<SchedulePageProps> = ({ events, settings, initialBr
                     {t.subtitle}
                 </p>
             </div>
-            <div className="w-fit bg-white/80 backdrop-blur-sm border border-green-100 text-green-800 px-2.5 py-1 sm:px-4 sm:py-2 rounded-lg text-[10px] sm:text-sm font-bold flex items-center gap-1.5 shadow-sm">
-                <CalendarRange className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-green-600" />
-                <span>{t.range} {dateWindow.label}</span>
-            </div>
         </div>
 
         <FilterBar 
@@ -204,6 +179,8 @@ const SchedulePage: React.FC<SchedulePageProps> = ({ events, settings, initialBr
           language={language}
           context="Activation"
           variant="green"
+          locationLabel={language === 'vi' ? 'Tỉnh/TP' : 'Province'}
+          locationOptions={provinceOptions}
         />
 
         <EventTable 
@@ -227,4 +204,4 @@ const SchedulePage: React.FC<SchedulePageProps> = ({ events, settings, initialBr
   );
 };
 
-export default SchedulePage;
+export default ActivationSchedulePage;

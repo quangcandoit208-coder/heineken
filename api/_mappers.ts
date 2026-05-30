@@ -12,16 +12,19 @@ import {
 type RowObject = {
   rowNumber: number;
   get: (...aliases: string[]) => string;
+  getAt: (index: number) => string;
 };
 
 type ToRowsOptions = {
   headerRowIndex?: number;
   headerRowCount?: number;
+  startRowNumber?: number;
 };
 
 const toRows = (values: string[][], options: ToRowsOptions = {}): RowObject[] => {
   const headerRowIndex = options.headerRowIndex || 0;
   const headerRowCount = options.headerRowCount || 1;
+  const startRowNumber = options.startRowNumber || 1;
   const headerRows = values.slice(headerRowIndex, headerRowIndex + headerRowCount);
   const columnCount = Math.max(0, ...headerRows.map(row => row.length));
   const headers = Array.from({ length: columnCount }, (_, columnIndex) => {
@@ -39,7 +42,7 @@ const toRows = (values: string[][], options: ToRowsOptions = {}): RowObject[] =>
   });
 
   return values.slice(headerRowIndex + headerRowCount).map((row, rowIndex) => ({
-    rowNumber: headerRowIndex + headerRowCount + rowIndex + 1,
+    rowNumber: startRowNumber + headerRowIndex + headerRowCount + rowIndex,
     get: (...aliases: string[]) => {
       for (const alias of aliases) {
         const index = headerMap.get(normalizeHeader(alias));
@@ -47,6 +50,7 @@ const toRows = (values: string[][], options: ToRowsOptions = {}): RowObject[] =>
       }
       return '';
     },
+    getAt: (index: number) => cleanText(row[index]),
   }));
 };
 
@@ -76,7 +80,8 @@ const toProgramType = (value: string): ProgramType | null => {
 
 export const mapTotalCampaigns = (values: string[][], warnings: DataWarning[]): Promotion[] => {
   const headerRowIndex = findHeaderRowIndex(values, ['Brand', 'Title', 'Type'], 2);
-  const rows = toRows(values, { headerRowIndex });
+  const rows = toRows(values, { headerRowIndex, startRowNumber: 3 });
+  const seenCodes = new Set<string>();
 
   return rows.flatMap(row => {
     const title = row.get('Title', 'Campaign Title', 'Program Title', 'Tên chương trình', 'Ten chuong trinh');
@@ -94,6 +99,17 @@ export const mapTotalCampaigns = (values: string[][], warnings: DataWarning[]): 
       return [];
     }
 
+    const code = slugify(row.get('Code'));
+    const id = code || slugify(`${brand}-${type}-${title}-${row.rowNumber}`);
+    if (!code) {
+      addWarning(warnings, 'TotalCampaigns', row.rowNumber, 'Code', 'Missing program code; generated fallback id');
+    }
+    if (seenCodes.has(id)) {
+      addWarning(warnings, 'TotalCampaigns', row.rowNumber, 'Code', `Duplicate program code ignored: ${id}`);
+      return [];
+    }
+    seenCodes.add(id);
+
     const bu = row.get('BU (VD: GHCM,NO,CE,MKD)', 'BU', 'Region (Dữ liệu: GHCM, NO, CE, MKD)', 'Region', 'Regions');
     const startDate = normalizeDate(row.get('Start Date', 'Start', 'Ngày bắt đầu', 'Ngay bat dau'));
     const endDate = normalizeDate(row.get('End Date', 'End', 'Ngày kết thúc', 'Ngay ket thuc'));
@@ -106,7 +122,7 @@ export const mapTotalCampaigns = (values: string[][], warnings: DataWarning[]): 
     }
 
     return [{
-      id: slugify(`${brand}-${type}-${title}-${startDate || row.rowNumber}`),
+      id,
       title,
       brand,
       content: row.get('Content', 'Description', 'Mô tả', 'Mo ta'),
@@ -123,56 +139,98 @@ export const mapTotalCampaigns = (values: string[][], warnings: DataWarning[]): 
   });
 };
 
-export const mapActivationEvents = (values: string[][], warnings: DataWarning[]): ProgramEvent[] => {
+interface ActivationMapOptions {
+  sourceSheet: string;
+  programsByCode: Map<string, Promotion>;
+}
+
+export const mapActivationEvents = (
+  values: string[][],
+  warnings: DataWarning[],
+  options: ActivationMapOptions,
+): ProgramEvent[] => {
   const headerRowIndex = findHeaderRowIndex(values, ['Brand', 'Outlet ID', 'Outlet Name', 'Date', 'Province'], 3);
-  const rows = toRows(values, { headerRowIndex, headerRowCount: 3 });
+  const rows = toRows(values, { headerRowIndex, headerRowCount: 3, startRowNumber: 6 });
 
   return rows.flatMap(row => {
     const brand = row.get('Brand');
     const outletId = row.get('Outlet ID');
     const venue = row.get('Outlet Name');
     const date = normalizeDate(row.get('Date'));
-
-    if (!brand && !venue && !date) return [];
-    if (!date) {
-      addWarning(warnings, 'Activation', row.rowNumber, 'Date', 'Missing or invalid activation date');
-      return [];
-    }
-    if (!venue) {
-      addWarning(warnings, 'Activation', row.rowNumber, 'Outlet Name', 'Missing outlet name');
-    }
-
+    const rawEventCode = row.get('Code Event', 'Event Code') || row.getAt(12);
+    const eventCode = rawEventCode ? slugify(rawEventCode) : '';
+    const linkedProgram = eventCode ? options.programsByCode.get(eventCode) : undefined;
+    const scale = row.get('Scale');
+    const bu = row.get('BU');
+    const region = row.get('Region');
     const street = row.get('Street');
     const district = row.get('District');
     const cityValue = row.get('City');
     const province = row.get('Province');
-    const workingTime = row.get('WORKING TIME', 'Working Time');
+    const mapLink = normalizeLink(row.get('Link GG Maps (Không rút gọn)', 'Link GG Maps', 'Link GG Maps (Khong rut gon)'));
+    const saleRep = row.get('Sale Rep Name');
+    const hardPhoneContactSale = row.get('Hard Phone Contact Sale');
     const checkIn = row.get('Check in Time');
     const checkOut = row.get('Check out Time');
-    const time = workingTime || [checkIn, checkOut].filter(Boolean).join(' - ');
+    const act = row.get('Act');
+    const typeOfOutlet = row.get('Type of outlet');
+    const updated = row.get('Update?');
+    const hasAnyContent = [
+      brand,
+      scale,
+      bu,
+      region,
+      outletId,
+      venue,
+      street,
+      district,
+      cityValue,
+      province,
+      mapLink,
+      eventCode,
+      saleRep,
+      hardPhoneContactSale,
+      checkIn,
+      checkOut,
+      act,
+      date,
+      typeOfOutlet,
+      updated,
+    ].some(Boolean);
+
+    if (!hasAnyContent) return [];
+
+    const time = [checkIn, checkOut].filter(Boolean).join(' - ');
     const address = [street, district, cityValue, province].filter(Boolean).join(', ');
 
     return [{
-      id: slugify(`${outletId || venue}-${date}-${row.rowNumber}`),
-      brand,
-      scale: row.get('Scale'),
-      bu: row.get('BU'),
-      region: row.get('Region'),
+      id: slugify(`${options.sourceSheet}-${outletId || venue || eventCode || 'row'}-${date || 'no-date'}-${row.rowNumber}`),
+      brand: brand || linkedProgram?.brand || '',
+      eventCode,
+      eventName: linkedProgram?.title || '',
+      programId: linkedProgram?.id,
+      scale,
+      bu,
+      region,
       outletId,
       venue,
       address,
-      mapLink: normalizeLink(row.get('Link GG Maps (Không rút gọn)', 'Link GG Maps', 'Link GG Maps (Khong rut gon)')),
+      mapLink,
       ward: '',
       city: province || cityValue,
       district,
       province,
-      saleRep: row.get('Sale Rep Name'),
-      hardPhoneContactSale: row.get('Hard Phone Contact Sale'),
+      saleRep,
+      hardPhoneContactSale,
       date,
       time,
-      act: row.get('Act'),
-      typeOfOutlet: row.get('Type of outlet'),
-      updated: row.get('Update?'),
+      checkInTime: checkIn,
+      checkOutTime: checkOut,
+      act,
+      typeOfOutlet,
+      updated,
+      sourceSheet: options.sourceSheet,
+      sourceRow: row.rowNumber,
     }];
   });
 };

@@ -1,7 +1,17 @@
 import React, { useState, useEffect } from 'react';
+import {
+  BrowserRouter,
+  Navigate,
+  Route,
+  Routes,
+  useLocation,
+  useNavigate,
+  useParams,
+  useSearchParams,
+} from 'react-router-dom';
 import Navbar from './components/Navbar';
 import HomePage from './components/HomePage';
-import SchedulePage from './components/SchedulePage';
+import ActivationSchedulePage from './components/ActivationSchedulePage';
 import AWOSchedulePage from './components/AWOSchedulePage';
 import ProgramDetailPage from './components/ProgramDetailPage';
 import ProgramListPage from './components/ProgramListPage';
@@ -13,37 +23,42 @@ const INITIAL_SETTINGS: AppSettings = {
   ...DEFAULT_SETTINGS
 };
 
-function App() {
-  const [currentView, setCurrentView] = useState<View>('home');
+const getCurrentView = (pathname: string): View => {
+  if (pathname === '/activation' || pathname === '/schedule') return 'activation';
+  if (pathname === '/awo' || pathname === '/awo-schedule') return 'awo-schedule';
+  if (pathname.startsWith('/programs/')) return 'program-detail';
+  if (pathname === '/programs') return 'program-list';
+  return 'home';
+};
+
+function CalendarApp() {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const currentView = getCurrentView(location.pathname);
   const [language, setLanguage] = useState<'vi' | 'en'>('vi');
   const [events, setEvents] = useState<ProgramEvent[]>([]);
   const [settings, setSettings] = useState<AppSettings>(INITIAL_SETTINGS);
   const [warnings, setWarnings] = useState<DataWarning[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
-  
-  const [selectedProgramId, setSelectedProgramId] = useState<string | null>(null);
-  const [initialScheduleBrand, setInitialScheduleBrand] = useState<string | null>(null);
 
   const handleSelectProgram = (id: string) => {
-    setSelectedProgramId(id);
-    setCurrentView('program-detail');
+    navigate(`/programs/${encodeURIComponent(id)}`);
   };
 
   const handleViewScheduleWithBrand = (brand: string) => {
-      setInitialScheduleBrand(brand);
-      setCurrentView('schedule');
-  };
-
-  const getSelectedProgram = () => {
-    return settings.promotions.find(p => p.id === selectedProgramId);
+    navigate(`/activation?brand=${encodeURIComponent(brand)}`);
   };
 
   const handleSetCurrentView = (view: View) => {
-      if (view !== 'schedule') {
-          setInitialScheduleBrand(null);
-      }
-      setCurrentView(view);
+    const paths: Record<View, string> = {
+      home: '/',
+      activation: '/activation',
+      'awo-schedule': '/awo',
+      'program-list': '/programs',
+      'program-detail': '/programs',
+    };
+    navigate(paths[view]);
   };
 
   const toggleLanguage = () => {
@@ -77,7 +92,7 @@ function App() {
 
   useEffect(() => {
     window.scrollTo(0, 0);
-  }, [currentView]);
+  }, [location.pathname, location.search]);
 
   const t = {
     loading: language === 'vi' ? 'Đang tải dữ liệu từ Google Sheet...' : 'Loading Google Sheet data...',
@@ -142,55 +157,124 @@ function App() {
         )}
 
         {!isLoading && !loadError && (
-          <>
-        {currentView === 'home' && (
-          <HomePage 
-            setCurrentView={handleSetCurrentView} 
-            settings={settings} 
-            onSelectProgram={handleSelectProgram}
-            onViewScheduleWithBrand={handleViewScheduleWithBrand}
-            language={language}
-          />
-        )}
-        
-        {currentView === 'schedule' && (
-          <SchedulePage 
-            events={events} 
-            settings={settings} 
-            initialBrandFilter={initialScheduleBrand}
-            language={language}
-          />
-        )}
-
-        {currentView === 'awo-schedule' && (
-          <AWOSchedulePage 
-            promotions={settings.promotions}
-            language={language}
-          />
-        )}
-
-        {currentView === 'program-list' && (
-            <ProgramListPage 
-                promotions={settings.promotions}
-                onSelectProgram={handleSelectProgram}
-                setCurrentView={handleSetCurrentView}
-                language={language}
+          <Routes>
+            <Route
+              path="/"
+              element={
+                <HomePage
+                  setCurrentView={handleSetCurrentView}
+                  settings={settings}
+                  onSelectProgram={handleSelectProgram}
+                  onViewScheduleWithBrand={handleViewScheduleWithBrand}
+                  language={language}
+                />
+              }
             />
-        )}
-
-        {currentView === 'program-detail' && (
-            <ProgramDetailPage 
-                program={getSelectedProgram()} 
-                onBack={() => handleSetCurrentView('program-list')}
-                setCurrentView={handleSetCurrentView}
-                onViewScheduleWithBrand={handleViewScheduleWithBrand}
-                language={language}
+            <Route
+              path="/activation"
+              element={
+                <ActivationRoute
+                  events={events}
+                  settings={settings}
+                  language={language}
+                />
+              }
             />
-        )}
-          </>
+            <Route path="/schedule" element={<Navigate to="/activation" replace />} />
+            <Route
+              path="/awo"
+              element={
+                <AWOSchedulePage
+                  promotions={settings.promotions}
+                  language={language}
+                />
+              }
+            />
+            <Route path="/awo-schedule" element={<Navigate to="/awo" replace />} />
+            <Route
+              path="/programs"
+              element={
+                <ProgramListPage
+                  promotions={settings.promotions}
+                  onSelectProgram={handleSelectProgram}
+                  setCurrentView={handleSetCurrentView}
+                  language={language}
+                />
+              }
+            />
+            <Route
+              path="/programs/:programId"
+              element={
+                <ProgramDetailRoute
+                  promotions={settings.promotions}
+                  onBack={() => handleSetCurrentView('program-list')}
+                  setCurrentView={handleSetCurrentView}
+                  onViewScheduleWithBrand={handleViewScheduleWithBrand}
+                  language={language}
+                />
+              }
+            />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
         )}
       </main>
     </div>
+  );
+}
+
+interface ActivationRouteProps {
+  events: ProgramEvent[];
+  settings: AppSettings;
+  language: 'vi' | 'en';
+}
+
+const ActivationRoute: React.FC<ActivationRouteProps> = ({ events, settings, language }) => {
+  const [searchParams] = useSearchParams();
+
+  return (
+    <ActivationSchedulePage
+      events={events}
+      settings={settings}
+      initialBrandFilter={searchParams.get('brand')}
+      language={language}
+    />
+  );
+};
+
+interface ProgramDetailRouteProps {
+  promotions: AppSettings['promotions'];
+  onBack: () => void;
+  setCurrentView: (view: View) => void;
+  onViewScheduleWithBrand: (brand: string) => void;
+  language: 'vi' | 'en';
+}
+
+const ProgramDetailRoute: React.FC<ProgramDetailRouteProps> = ({
+  promotions,
+  onBack,
+  setCurrentView,
+  onViewScheduleWithBrand,
+  language,
+}) => {
+  const { programId } = useParams();
+  const program = promotions.find(p => p.id === programId);
+
+  return (
+    <ProgramDetailPage
+      program={program}
+      onBack={onBack}
+      setCurrentView={setCurrentView}
+      onViewScheduleWithBrand={onViewScheduleWithBrand}
+      language={language}
+    />
+  );
+};
+
+function App() {
+  return (
+    <BrowserRouter>
+      <CalendarApp />
+    </BrowserRouter>
   );
 }
 

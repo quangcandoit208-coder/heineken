@@ -1,0 +1,28 @@
+{
+  "rewrites": [
+    {
+      "source": "/programs",
+      "destination": "/"
+    },
+    {
+      "source": "/programs/:path*",
+      "destination": "/"
+    },
+    {
+      "source": "/activation",
+      "destination": "/"
+    },
+    {
+      "source": "/schedule",
+      "destination": "/"
+    },
+    {
+      "source": "/awo",
+      "destination": "/"
+    },
+    {
+      "source": "/awo-schedule",
+      "destination": "/"
+    }
+  ]
+}

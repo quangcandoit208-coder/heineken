@@ -51,7 +51,7 @@ Website noi bo gom 3 chuc nang chinh:
 
 2. Hien thi cac quan dang co chuong trinh Activation.
    - Data lay tu sheet `Activation`.
-   - Giu cach filter/sort cua `SchedulePage.tsx`.
+   - Giu cach filter/sort cua `ActivationSchedulePage.tsx`.
    - Co phan trang 20 dong/trang.
    - Tam thoi chua link ten event sang detail.
 
@@ -76,7 +76,7 @@ Giu React/Vite hien tai, nhung thay data static bang API:
   - Them pagination 12 card/trang.
   - Reset page ve 1 khi search/type/region filter doi.
 
-- `components/SchedulePage.tsx`
+- `components/ActivationSchedulePage.tsx`
   - Them pagination 20 dong/trang.
   - Reset page ve 1 khi filter, sort, show/hide past doi.
   - Giu date window 3 tuan quanh ngay hien tai nhu logic hien co.
@@ -122,7 +122,9 @@ GOOGLE_SHEET_ID
 GOOGLE_CLIENT_EMAIL
 GOOGLE_PRIVATE_KEY
 GOOGLE_TOTAL_CAMPAIGNS_RANGE='Total Campaigns'!A3:L
-GOOGLE_ACTIVATION_RANGE='Activation Template'!B6:U
+GOOGLE_ACTIVATION_IOB_RANGE='IOB'!B6:V
+GOOGLE_ACTIVATION_FOCUS_RANGE='FOCUS'!B6:V
+GOOGLE_ACTIVATION_GS_RANGE='GS'!B6:V
 ```
 
 Ghi chu:
@@ -298,12 +300,12 @@ Files tao moi:
 - `components/PaginationControls.tsx`
 
 Files sua:
-- `components/SchedulePage.tsx`
+- `components/ActivationSchedulePage.tsx`
 - `components/AWOSchedulePage.tsx`
 - `components/ProgramListPage.tsx`
 
 Chi tiet:
-- `SchedulePage`: page size 20.
+- `ActivationSchedulePage`: page size 20.
 - `AWOSchedulePage`: page size 20.
 - `ProgramListPage`: page size 12.
 - Pagination dat duoi bang/list.

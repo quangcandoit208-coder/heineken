@@ -1,5 +1,6 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import FilterBar from './FilterBar';
 import PaginationControls from './PaginationControls';
 import { Promotion, FilterState, PromotionSortConfig, PromotionSortField } from '../types';
@@ -174,7 +175,12 @@ const AWOSchedulePage: React.FC<AWOSchedulePageProps> = ({ promotions, language 
                         <td className="px-2 py-2 sm:px-6 sm:py-4">
                           <div className="flex flex-col gap-1">
                             <span className={`w-fit px-1.5 py-0.5 rounded text-[9px] md:text-xs font-medium border ${getBrandTagClasses(p.brand)} leading-none`}>{p.brand}</span>
-                            <span className="text-[11px] md:text-base font-bold text-gray-900 leading-tight line-clamp-2">{p.title}</span>
+                            <Link
+                              to={`/programs/${encodeURIComponent(p.id)}`}
+                              className="text-[11px] md:text-base font-bold text-gray-900 leading-tight line-clamp-2 hover:text-green-700 hover:underline"
+                            >
+                              {p.title}
+                            </Link>
                           </div>
                         </td>
                         <td className="px-2 py-2 sm:px-6 sm:py-4 whitespace-nowrap">

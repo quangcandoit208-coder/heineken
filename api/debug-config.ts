@@ -8,7 +8,9 @@ export default function handler(_req: any, res: any) {
       GOOGLE_CLIENT_EMAIL: hasValue('GOOGLE_CLIENT_EMAIL'),
       GOOGLE_PRIVATE_KEY: hasValue('GOOGLE_PRIVATE_KEY'),
       GOOGLE_TOTAL_CAMPAIGNS_RANGE: process.env.GOOGLE_TOTAL_CAMPAIGNS_RANGE || null,
-      GOOGLE_ACTIVATION_RANGE: process.env.GOOGLE_ACTIVATION_RANGE || null,
+      GOOGLE_ACTIVATION_IOB_RANGE: process.env.GOOGLE_ACTIVATION_IOB_RANGE || null,
+      GOOGLE_ACTIVATION_FOCUS_RANGE: process.env.GOOGLE_ACTIVATION_FOCUS_RANGE || null,
+      GOOGLE_ACTIVATION_GS_RANGE: process.env.GOOGLE_ACTIVATION_GS_RANGE || null,
     },
     updatedAt: new Date().toISOString(),
   });
